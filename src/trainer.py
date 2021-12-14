@@ -45,18 +45,18 @@ class Trainer:
         num_classes = self.config["num_classes"]
         image_size = self.config["image_size"]
 
-        train_progress_bar = tqdm(self.dataloader, desc = f"Epoch {epoch + 1}")
+        train_progress_bar = tqdm(self.loader, desc = f"Epoch {epoch + 1}")
 
         self.generator.train()
         self.discriminator.train()
 
         for batch_index, (images_real, labels_real) in enumerate(train_progress_bar):
             images_real = images_real.to(self.device)
-            labels_real = labels_real.to(self.device)
+            labels_real = labels_real.to(self.device).float()
 
             # generate noise and random labels to generate fake images
             noise = torch.randn(images_real.size(0), d_hidden, 1, 1).float().to(self.device)
-            labels_fake = torch.nn.functional.one_hot(torch.from_numpy(np.random.choice(range(0,num_classes), labels_real.size(0))))
+            labels_fake = torch.nn.functional.one_hot(torch.from_numpy(np.random.choice(range(0,num_classes), labels_real.size(0)))).float()
 
             images_fake = self.generator(noise, labels_fake)
 

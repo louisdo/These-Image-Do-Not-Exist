@@ -45,6 +45,7 @@ class ImageDatasetWithCategory(torch.utils.data.Dataset):
                  outlier_ids: dict, 
                  config: dict):
         super(ImageDatasetWithCategory, self).__init__()
+        self.config = config
         self.preprocess_data(data, outlier_ids)
         self.error_index = set([])
 
@@ -78,20 +79,21 @@ class ImageDatasetWithCategory(torch.utils.data.Dataset):
 
 
     def __getitem__(self, index):
-        if index in self.error_index: return torch.zeros((3, self.imsize, self.imsize))
+        if index in self.error_index: 
+            return self.__getitem__(index + 1)
 
         image_path = os.path.join(self.config["data_folder"], self.data[index]["id"] + ".jpg")
         image = load_image(image_path)
 
         if image is None or image.shape[-1] != 3:
             self.error_index.add(index)
-            return torch.zeros((3, self.imsize, self.imsize))
+            return self.__getitem__(index + 1)
 
         return self.transform(image), self.get_one_hot(self.data[index]["category"])
 
 
 def get_loader(dataset, config):
-    batch_size = config["batch_size"],
+    batch_size = config["batch_size"]
     shuffle = config["shuffle"]
     num_workers = config["num_workers"]
 
