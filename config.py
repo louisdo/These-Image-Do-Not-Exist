@@ -11,5 +11,7 @@ CONFIG = {
     "learning_rate": 0.0001,
     "num_epochs": 40,
     "ckpt_save_interval": 40,
-    "data_folder": ""
+    "data_folder": "",
+    "data_path": "",
+    "outlier_ids_path": ""
 }

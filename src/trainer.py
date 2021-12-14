@@ -1,9 +1,9 @@
 import json, torch
 import numpy as np
 from PIL.Image import Image
-from model import Generator, Discriminator
-from dataloader import get_loader, ImageDatasetWithCategory
-from miscs import get_linear_schedule_with_warmup
+from src.model import Generator, Discriminator
+from src.dataloader import get_loader, ImageDatasetWithCategory
+from src.miscs import get_linear_schedule_with_warmup
 from tqdm import tqdm
 
 
@@ -15,7 +15,7 @@ class Trainer:
 
         with open(config["data_path"]) as f:
             data = json.load(f)
-        with open(config["outlier_ids"]) as f:
+        with open(config["outlier_ids_path"]) as f:
             outlier_ids = json.load(f)
         dataset = ImageDatasetWithCategory(data, outlier_ids, config)
         self.loader = get_loader(dataset, config)

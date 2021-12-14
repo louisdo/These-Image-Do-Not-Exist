@@ -1,6 +1,6 @@
 import torch, torchvision, json, os, PIL
 from torchvision import transforms
-from miscs import load_image
+from src.miscs import load_image
 
 
 
