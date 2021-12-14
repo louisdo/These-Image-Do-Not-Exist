@@ -77,7 +77,7 @@ class ImageDatasetWithCategory(torch.utils.data.Dataset):
     def __getitem__(self, index):
         if index in self.error_index: return torch.zeros((3, self.imsize, self.imsize))
 
-        image_path = os.path.join(self.DATA_FOLDER, self.data[index]["id"] + ".jpg")
+        image_path = os.path.join(self.config["data_folder"], self.data[index]["id"] + ".jpg")
         image = load_image(image_path)
 
         if image is None or image.shape[-1] != 3:

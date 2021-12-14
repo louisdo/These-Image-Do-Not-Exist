@@ -10,5 +10,6 @@ CONFIG = {
     "number_channel": 3,
     "learning_rate": 0.0001,
     "num_epochs": 40,
-    "ckpt_save_interval": 40
+    "ckpt_save_interval": 40,
+    "data_folder": ""
 }
