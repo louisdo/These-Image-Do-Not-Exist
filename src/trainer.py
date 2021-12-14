@@ -1,4 +1,4 @@
-import json, torch
+import json, torch, torchvision, os
 import numpy as np
 from PIL.Image import Image
 from src.model import Generator, Discriminator
@@ -21,8 +21,8 @@ class Trainer:
         self.loader = get_loader(dataset, config)
 
 
-        self.generator = Generator(config)
-        self.discriminator = Discriminator(config)
+        self.generator = Generator(config).to(self.device)
+        self.discriminator = Discriminator(config).to(self.device)
 
         self.optimizer_g = torch.optim.Adam(self.generator.parameters(), lr=config["learning_rate"], betas=(0.5, 0.999))
         self.optimizer_d = torch.optim.Adam(self.discriminator.parameters(), lr=config["learning_rate"], betas=(0.5, 0.999))
@@ -39,13 +39,18 @@ class Trainer:
                                                             last_epoch = - 1)
 
 
+        self.fixed_noise = torch.randn(5, config["d_hidden"]).float()
+        self.fixed_labels = torch.eye(5)
+
+
+
 
     def train_one_epoch(self, epoch):
         d_hidden = self.config["d_hidden"]
         num_classes = self.config["num_classes"]
         image_size = self.config["image_size"]
 
-        train_progress_bar = tqdm(self.loader, desc = f"Epoch {epoch + 1}")
+        train_progress_bar = tqdm(self.loader, desc = f"Epoch {epoch}")
 
         self.generator.train()
         self.discriminator.train()
@@ -55,8 +60,8 @@ class Trainer:
             labels_real = labels_real.to(self.device).float()
 
             # generate noise and random labels to generate fake images
-            noise = torch.randn(images_real.size(0), d_hidden, 1, 1).float().to(self.device)
-            labels_fake = torch.nn.functional.one_hot(torch.from_numpy(np.random.choice(range(0,num_classes), labels_real.size(0)))).float()
+            noise = torch.randn(images_real.size(0), d_hidden).float().to(self.device)
+            labels_fake = torch.nn.functional.one_hot(torch.from_numpy(np.random.choice(range(0,num_classes), labels_real.size(0))), num_classes).to(self.device).float()
 
             images_fake = self.generator(noise, labels_fake)
 
@@ -110,8 +115,14 @@ class Trainer:
         }, ckpt_path)
         print("Done saving model")
 
+    def save_images(self, epoch):
+        with torch.no_grad():
+            fake_images = self.generator(self.fixed_noise, self.fixed_labels)
+        torchvision.utils.save_image(fake_images, os.path.join(self.config["ckpt_folder"], f"epoch{epoch}.jpg"))
+
     def train(self):
         num_epochs = self.config["num_epochs"]
         for epoch in range(num_epochs):
             self.train_one_epoch(epoch + 1)
             self.save_model(epoch + 1)
+            self.save_images()
