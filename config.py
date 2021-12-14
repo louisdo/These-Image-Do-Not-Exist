@@ -11,7 +11,7 @@ CONFIG = {
     "learning_rate": 0.0001,
     "num_epochs": 40,
     "ckpt_save_interval": 40,
-    "data_folder": "",
-    "data_path": "",
-    "outlier_ids_path": ""
+    "data_folder": "../data/image_folder",
+    "data_path": "../data/image_info_data.json",
+    "outlier_ids_path": "../data/preprocessing/indices2remove_allcategory.json"
 }

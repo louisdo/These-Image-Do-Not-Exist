@@ -68,6 +68,9 @@ class ImageDatasetWithCategory(torch.utils.data.Dataset):
                 preprocessed_data.append(to_append)
         self.data = preprocessed_data
 
+    def __len__(self):
+        return len(self.data)
+
 
     def get_one_hot(self, category):
         # example: category = 3, self.num_classes = 5 => return [0,0,0,1,0]
