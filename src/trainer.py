@@ -24,19 +24,10 @@ class Trainer:
         self.generator = Generator(config).to(self.device)
         self.discriminator = Discriminator(config).to(self.device)
 
-        self.optimizer_g = torch.optim.Adam(self.generator.parameters(), lr=config["learning_rate"], betas=(0.5, 0.999))
-        self.optimizer_d = torch.optim.Adam(self.discriminator.parameters(), lr=config["learning_rate"], betas=(0.5, 0.999))
+        self.optimizer_g = torch.optim.RMSprop(self.generator.parameters(), lr=config["learning_rate"])
+        self.optimizer_d = torch.optim.RMSprop(self.discriminator.parameters(), lr=config["learning_rate"])
 
         self.criteria = torch.nn.BCELoss(reduction = "mean")
-        num_steps_one_epoch = len(self.loader)
-        self.scheduler_g = get_linear_schedule_with_warmup(self.optimizer_g, 
-                                                            num_steps_one_epoch, 
-                                                            num_steps_one_epoch * self.config["num_epochs"],
-                                                            last_epoch = - 1)
-        self.scheduler_d = get_linear_schedule_with_warmup(self.optimizer_d, 
-                                                            num_steps_one_epoch, 
-                                                            num_steps_one_epoch * self.config["num_epochs"],
-                                                            last_epoch = - 1)
 
 
         self.fixed_noise = torch.randn(5, config["d_hidden"]).float()
@@ -74,35 +65,31 @@ class Trainer:
             discriminator_output_real = self.discriminator(images_real, 
                                                            labels_real.view(labels_real.size(0), \
                                                                 labels_real.size(1), 1, 1).repeat(1, 1, image_size, image_size))
-            discriminator_loss_real = self.criteria(discriminator_output_real, torch.ones_like(discriminator_output_real).to(self.device))
-            discriminator_loss_real.backward()
 
             discriminator_output_fake = self.discriminator(images_fake.detach(),
                                                            labels_fake.view(labels_fake.size(0), \
                                                                 labels_fake.size(1), 1, 1).repeat(1, 1, image_size, image_size))
-            discriminator_loss_fake = self.criteria(discriminator_output_fake, torch.zeros_like(discriminator_output_fake).to(self.device))
-            discriminator_loss_fake.backward()
 
-            averaged_discriminator_loss = (discriminator_loss_real.item() + discriminator_loss_fake.item()) / 2
+            discriminator_loss = -(torch.mean(discriminator_output_real) - torch.mean(discriminator_output_fake))
             self.optimizer_d.step()
-            self.scheduler_d.step()
+
+            for p in self.discriminator.parameters():
+                p.data.clamp_(-self.config["clip_value"], self.config["clip_value"])
 
             # train generator
-            self.generator.zero_grad()
-            discriminator_output_fake = self.discriminator(images_fake,
-                                                           labels_fake.view(labels_fake.size(0), \
-                                                                labels_fake.size(1), 1, 1).repeat(1, 1, image_size, image_size))
-            generator_loss = self.criteria(discriminator_output_fake, torch.ones_like(discriminator_output_fake).to(self.device))
-            generator_loss.backward()
-
-            averaged_generator_loss = generator_loss.item()
-            self.optimizer_g.step()
-            self.scheduler_g.step()
+            if batch_index % self.config["n_critic"] == 0:
+                self.generator.zero_grad()
+                discriminator_output_fake = self.discriminator(images_fake,
+                                                            labels_fake.view(labels_fake.size(0), \
+                                                                    labels_fake.size(1), 1, 1).repeat(1, 1, image_size, image_size))
+                generator_loss = -torch.mean(discriminator_output_fake)
+                generator_loss.backward()
+                self.optimizer_g.step()
 
 
             train_progress_bar.set_postfix({
-                "Generator loss": averaged_generator_loss,
-                "Discriminator loss": averaged_discriminator_loss
+                "Generator loss": generator_loss.item(),
+                "Discriminator loss": discriminator_loss.item()
             })
 
     def save_model(self, epoch):
@@ -118,11 +105,12 @@ class Trainer:
     def save_images(self, epoch):
         with torch.no_grad():
             fake_images = self.generator(self.fixed_noise, self.fixed_labels)
-        torchvision.utils.save_image(fake_images, os.path.join(self.config["ckpt_folder"], f"epoch{epoch}.jpg"))
+        torchvision.utils.save_image(fake_images, os.path.join(self.config["ckpt_folder"], f"epoch{epoch}.jpg"), normalize = True)
 
-    def train(self):
+    def train(self, start = 0):
+        assert os.path.exists(self.config["ckpt_folder"])
         num_epochs = self.config["num_epochs"]
-        for epoch in range(num_epochs):
+        for epoch in range(start, start + num_epochs):
             self.train_one_epoch(epoch + 1)
             self.save_model(epoch + 1)
-            self.save_images()
+            self.save_images(epoch + 1)
