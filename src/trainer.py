@@ -122,6 +122,8 @@ class Trainer:
 
     def train(self, start = 0):
         num_epochs = self.config["num_epochs"]
+        assert os.path.exists(self.config["ckpt_folder"])
+        self.save_images(0)
         for epoch in range(start, start + num_epochs):
             self.train_one_epoch(epoch + 1)
             self.save_model(epoch + 1)
