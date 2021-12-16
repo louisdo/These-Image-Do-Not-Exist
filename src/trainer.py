@@ -39,8 +39,8 @@ class Trainer:
                                                             last_epoch = - 1)
 
 
-        self.fixed_noise = torch.randn(5, config["d_hidden"]).float()
-        self.fixed_labels = torch.eye(5)
+        self.fixed_noise = torch.randn(self.config["num_classes"], config["d_hidden"]).float()
+        self.fixed_labels = torch.eye(self.config["num_classes"])
 
 
 
