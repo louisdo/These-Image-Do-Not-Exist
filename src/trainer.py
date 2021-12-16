@@ -120,9 +120,9 @@ class Trainer:
             fake_images = self.generator(self.fixed_noise.to(self.device), self.fixed_labels.to(self.device))
         torchvision.utils.save_image(fake_images, os.path.join(self.config["ckpt_folder"], f"epoch{epoch}.jpg"))
 
-    def train(self):
+    def train(self, start = 0):
         num_epochs = self.config["num_epochs"]
-        for epoch in range(num_epochs):
+        for epoch in range(start, start + num_epochs):
             self.train_one_epoch(epoch + 1)
             self.save_model(epoch + 1)
-            self.save_images()
+            self.save_images(epoch + 1)
