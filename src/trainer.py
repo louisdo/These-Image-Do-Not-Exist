@@ -115,6 +115,14 @@ class Trainer:
         }, ckpt_path)
         print("Done saving model")
 
+    def resume_training(self):
+        if os.path.exists(self.config["resume_ckpt"]):
+            checkpoint = torch.load(self.config["resume_ckpt"])
+            self.discriminator.load_state_dict(checkpoint["discriminator"])
+            self.generator.load_state_dict(checkpoint["generator"])
+            print("Loaded checkpoint")
+        else: print("Train from scratch")
+
     def save_images(self, epoch):
         with torch.no_grad():
             fake_images = self.generator(self.fixed_noise.to(self.device), self.fixed_labels.to(self.device))
@@ -123,6 +131,7 @@ class Trainer:
     def train(self, start = 0):
         num_epochs = self.config["num_epochs"]
         assert os.path.exists(self.config["ckpt_folder"])
+        self.resume_training()
         self.save_images(0)
         for epoch in range(start, start + num_epochs):
             self.train_one_epoch(epoch + 1)
